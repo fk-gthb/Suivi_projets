@@ -257,7 +257,7 @@ function route(){
 
 // ---------- une action dans la liste ----------
 function ligneAction(a){
-  const i = imm(a.immeuble); const ep = etapesDe(a.id);
+  const i = imm(a.immeuble);
   return `<div class="li ur-${UCL(a.urgence)}${a.terminee?' fini':''}">
     <a class="li-lien" href="#action-${a.id}">
       <div class="li-top"><span class="u u-${UCL(a.urgence)}">${esc(a.urgence)}</span>${a.terminee ? '<span class="fin">Terminée</span>' : ''}</div>
@@ -266,7 +266,6 @@ function ligneAction(a){
     </a>
     ${a.prochaine ? `<a class="next li-next" href="#action-${a.id}"><b>Prochaine étape :</b> ${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span></a>`
       : (!a.terminee ? `<a class="next vide li-next" href="#action-${a.id}">Prochaine étape à définir ›</a>` : '')}
-    ${ep.length ? `<details class="passees"><summary>Étapes passées <span class="n">${ep.length}</span></summary>${ep.map(j => ligneEtape(j)).join('')}</details>` : ''}
   </div>`;
 }
 function ligneEtape(j, suppr){

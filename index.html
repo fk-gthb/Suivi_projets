@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Suivi projets</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icone_192.png">
@@ -12,111 +12,156 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Projets">
 <style>
+  /* Outil de chantier : listes verticales lisibles sur téléphone, l'urgence portée par une bande de couleur à gauche */
   :root{--bg:#f3f5f7;--card:#fff;--sunk:#e8ecf0;--ink:#17212b;--muted:#5b6876;--line:#d9dfe5;--accent:#1f4e79;--accent-soft:#dbe6f1;--accent-ink:#fff;
-    --ok:#1f7a4d;--ok-soft:#dcefe4;--warn:#a15c00;--warn-soft:#f6e8cf;--bad:#b3261e;--bad-soft:#f6dcda;--info:#5a4fa3;--info-soft:#e5e2f5}
-  @media (prefers-color-scheme:dark){:root{--bg:#0f151b;--card:#16202a;--sunk:#1d2935;--ink:#e4eaf0;--muted:#97a6b5;--line:#2b3a48;--accent:#8db8e3;--accent-soft:#1d3349;--accent-ink:#0f151b;
-    --ok:#6fcf9b;--ok-soft:#173527;--warn:#e9b25f;--warn-soft:#3a2c14;--bad:#f08a82;--bad-soft:#3d1c1a;--info:#b3a9f0;--info-soft:#2a2547}}
+    --ok:#1f7a4d;--ok-soft:#dcefe4;--warn:#a15c00;--warn-soft:#f6e8cf;--bad:#b3261e;--bad-soft:#f6dcda;--info:#5a4fa3;--info-soft:#e5e2f5;--next:#fff7e0;--next-line:#ecd9a0;--sujet:#d7ecea;--sujet-ink:#14514c}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#0f151b;--card:#16202a;--sunk:#1d2935;--ink:#e4eaf0;--muted:#97a6b5;--line:#2b3a48;--accent:#8db8e3;--accent-soft:#1d3349;--accent-ink:#0f151b;
+    --ok:#6fcf9b;--ok-soft:#173527;--warn:#e9b25f;--warn-soft:#3a2c14;--bad:#f08a82;--bad-soft:#3d1c1a;--info:#b3a9f0;--info-soft:#2a2547;--next:#2a2412;--next-line:#4a3f1e;--sujet:#173a37;--sujet-ink:#9fdcd4}}
+  :root[data-theme=dark]{color-scheme:dark;--bg:#0f151b;--card:#16202a;--sunk:#1d2935;--ink:#e4eaf0;--muted:#97a6b5;--line:#2b3a48;--accent:#8db8e3;--accent-soft:#1d3349;--accent-ink:#0f151b;
+    --ok:#6fcf9b;--ok-soft:#173527;--warn:#e9b25f;--warn-soft:#3a2c14;--bad:#f08a82;--bad-soft:#3d1c1a;--info:#b3a9f0;--info-soft:#2a2547;--next:#2a2412;--next-line:#4a3f1e;--sujet:#173a37;--sujet-ink:#9fdcd4}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-  main{max-width:760px;margin:0 auto;padding:16px 16px 64px}
+  main{max-width:760px;margin:0 auto;padding-block:16px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   h1{font-size:1.3rem;margin:0}
-  h2{font-size:1.1rem;margin:0}
-  h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px}
+  h2{font-size:1.1rem;margin:0;text-wrap:balance}
+  h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:22px 0 8px;display:flex;gap:8px;align-items:baseline}
+  h3 .n{font-weight:500}
+  a{color:var(--accent)}
   .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px}
   .top small{color:var(--muted);font-size:.8rem}
-  .tabs{display:flex;gap:6px;margin-bottom:16px}
-  .tabs a{flex:1;text-align:center;padding:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font-weight:600;text-decoration:none}
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tabs a{flex:1;text-align:center;padding:11px 6px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font-weight:600;text-decoration:none}
   .tabs a[aria-current=page]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
   label{display:block;font-size:.82rem;color:var(--muted);margin:0 0 4px}
   input,textarea,select{display:block;width:100%;min-width:0;max-width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;-webkit-appearance:none;appearance:none}
+  select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
   input[type=date],input[type=time]{min-height:46px;line-height:1.2}
   input::-webkit-date-and-time-value{text-align:left}
   textarea{min-height:70px;resize:vertical}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .row{display:flex;gap:10px;margin-bottom:12px}.row>div{flex:1;min-width:0}
   .f{margin-bottom:12px}
   .btn{display:inline-block;padding:11px 16px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer;text-decoration:none;text-align:center}
   .btn.full{width:100%}
   .btn:disabled{opacity:.5;cursor:default}
-  .ghost{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:.92rem;cursor:pointer;text-decoration:none;display:inline-block}
   .back{display:inline-flex;align-items:center;gap:4px;color:var(--accent);text-decoration:none;font-weight:600;margin-bottom:10px}
   .muted{color:var(--muted)}
   .msg{min-height:1.2em;margin-top:8px;font-size:.9rem}.msg.err{color:var(--bad)}
   .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .filters{align-items:center}
+  .filters select{width:auto;flex:1 1 150px;padding-block:8px;font-size:.92rem}
   .seg{display:inline-flex;flex-wrap:wrap;gap:4px}
   .seg button{padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
   .seg button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);border-color:transparent}
-  /* statuts */
-  .chip{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
-  .s-afaire{background:var(--warn-soft);color:var(--warn)} .s-encours{background:var(--info-soft);color:var(--info)}
-  .s-enattente{background:var(--sunk);color:var(--muted)} .s-termine{background:var(--ok-soft);color:var(--ok)}
+  /* urgence */
+  .u{display:inline-block;font-size:.74rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:2px 8px;border-radius:5px;white-space:nowrap}
+  .u-urgent{background:var(--bad-soft);color:var(--bad)} .u-peu{background:var(--warn-soft);color:var(--warn)} .u-occasion{background:var(--sunk);color:var(--muted)}
+  /* statut */
+  .st{display:inline-block;font-size:.78rem;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .st-encours{border-color:var(--info);color:var(--info)} .st-termine{border-color:var(--ok);color:var(--ok)}
   .late{color:var(--bad);font-weight:700}
-  /* immeubles */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-  a.imm{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);text-decoration:none}
-  a.imm:hover{border-color:var(--accent)}
-  a.imm.vide{opacity:.6}
-  .imm .code{display:inline-block;font:600 .8rem ui-monospace,Menlo,Consolas,monospace;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:1px 7px;margin-bottom:6px}
-  .imm .nom{font-weight:700;line-height:1.25}
-  .imm .ville{font-size:.82rem;color:var(--muted)}
-  .imm .cpt{margin-top:8px;font-size:.88rem}
-  /* actions */
-  a.act{display:block;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:10px;padding:11px 13px;margin-bottom:8px;color:var(--ink);text-decoration:none}
-  a.act.st-encours{border-left-color:var(--info)} a.act.st-enattente{border-left-color:var(--line)} a.act.st-termine{border-left-color:var(--ok);opacity:.65}
-  a.act.retard{border-left-color:var(--bad)}
-  .act .t{font-weight:600}
-  .act .m{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.85rem;color:var(--muted);margin-top:4px}
-  .act .n{font-size:.88rem;margin-top:4px}
   .tag{font:600 .75rem ui-monospace,Menlo,Consolas,monospace;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 6px}
+  /* liste verticale */
+  .list{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
+  .li{border-top:1px solid var(--line);position:relative}
+  .li:first-child{border-top:0}
+  .li::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--line)}
+  .li.ur-urgent::before{background:var(--bad)} .li.ur-peu::before{background:var(--warn)}
+  .li.fini{opacity:.6}
+  .li-lien{display:block;padding:12px 14px 10px 18px;color:var(--ink);text-decoration:none}
+  .li-lien:hover{background:var(--sunk)}
+  .li-top{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+  .fin{font-size:.78rem;font-weight:700;color:var(--ok)}
+  .li-titre{margin-top:6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;line-height:1.25}
+  .logt{font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
+  .act{font-size:.98rem;font-weight:700;color:var(--sujet-ink);background:var(--sujet);border-radius:6px;padding:2px 9px}
+  .resp{display:block;margin-top:5px;font-size:.86rem;font-weight:700;color:var(--ink)}
+  .resp.vide{font-weight:400;font-style:italic;color:var(--muted)}
+  .resp-f{margin-top:8px}
+  .resp-f label{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;font-size:.82rem}
+  .next{margin-top:8px;background:var(--next);border:1px solid var(--next-line);border-radius:7px;padding:6px 9px;font-size:.93rem}
+  .next b{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;display:block;color:var(--warn)}
+  .next.vide{background:transparent;border-style:dashed;color:var(--muted);font-style:italic}
+  .pers{margin-top:6px;font-size:.88rem;color:var(--muted)}
+  details.passees{padding:0 14px 10px 18px}
+  details.passees>summary,details.passees-fiche>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:.9rem;list-style:none;display:inline-flex;gap:6px;align-items:baseline}
+  details.passees>summary::-webkit-details-marker,details.passees-fiche>summary::-webkit-details-marker{display:none}
+  details.passees>summary::before,details.passees-fiche>summary::before{content:"▸";transition:transform .15s;display:inline-block}
+  details[open].passees>summary::before,details[open].passees-fiche>summary::before{transform:rotate(90deg)}
+  details.passees .jr{padding:8px 0}
+  details.passees-fiche>summary{font-size:1rem}
+  .n{color:var(--muted);font-weight:500}
+  .chk{display:flex;align-items:center;gap:6px;font-size:.92rem;color:var(--muted);margin:0}
+  .chk input{width:18px;height:18px;padding:0;-webkit-appearance:auto;appearance:auto;accent-color:var(--accent)}
+  .fiche-h{margin:2px 0 12px}
+  .fiche-h .logt{font-size:1.3rem}
+  .fiche-h .act{font-size:1.15rem}
+  button.lien{background:none;border:0;padding:6px 0 0;color:var(--ok);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left}
+  .btn.sec{background:var(--card);color:var(--ok);border:1px solid var(--ok)}
+  .lien-c{display:inline-block;margin-top:8px;font-weight:600;text-decoration:none}
   /* fiche */
   .pills{display:flex;flex-wrap:wrap;gap:6px}
-  .pills button{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:.9rem;cursor:pointer}
-  .pills button[aria-pressed=true]{border-color:currentColor;font-weight:700}
-  .pills button.s-afaire[aria-pressed=true]{background:var(--warn-soft);color:var(--warn)}
-  .pills button.s-encours[aria-pressed=true]{background:var(--info-soft);color:var(--info)}
-  .pills button.s-enattente[aria-pressed=true]{background:var(--sunk);color:var(--ink)}
-  .pills button.s-termine[aria-pressed=true]{background:var(--ok-soft);color:var(--ok)}
-  .pills button:not([aria-pressed=true]){background:var(--card);color:var(--muted)}
+  .pills button{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font:inherit;font-size:.9rem;cursor:pointer}
+  .pills button[aria-pressed=true]{font-weight:700;border-color:currentColor;color:var(--ink);background:var(--sunk)}
+  .pills button.u-urgent[aria-pressed=true]{background:var(--bad-soft);color:var(--bad)}
+  .pills button.u-peu[aria-pressed=true]{background:var(--warn-soft);color:var(--warn)}
+  .pills button.st-encours[aria-pressed=true]{background:var(--info-soft);color:var(--info)}
+  .pills button.st-termine[aria-pressed=true]{background:var(--ok-soft);color:var(--ok)}
+  .pills button.u,.pills button.st{text-transform:none;letter-spacing:0;font-size:.9rem;padding:8px 12px}
+  .pills button:not([aria-pressed=true]){background:var(--card);color:var(--muted);border-color:var(--line);font-weight:400}
+  .f-next label{color:var(--warn);font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.76rem}
+  .f-next input,.f-next textarea{background:var(--next);border-color:var(--next-line);font-weight:600}
+  /* contacts */
   .contact{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
   .contact:first-child{border-top:0}
   .contact .nm{font-weight:600}
   .contact .rl{font-size:.85rem;color:var(--muted)}
-  .contact .lk{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:3px;font-size:.92rem}
-  .contact a{color:var(--accent);text-decoration:none;overflow-wrap:anywhere}
+  .contact .lk{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:3px;font-size:.92rem}
+  .contact a{text-decoration:none;overflow-wrap:anywhere}
+  .contact .nolk{font-size:.85rem;color:var(--muted);font-style:italic}
   .del{background:none;border:0;color:var(--muted);font:inherit;font-size:.82rem;cursor:pointer;padding:4px;align-self:flex-start;white-space:nowrap}
   .del.sure{color:var(--bad);font-weight:700}
+  .grp{margin-bottom:12px}
+  .grp-h{display:flex;flex-direction:column;gap:2px;margin:18px 0 6px}
+  .grp-h h2{font-size:1rem}
+  .grp-h small{color:var(--muted)}
+  /* journal */
   .jr{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
   .jr:first-child{border-top:0}
   .jr .ic{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.95rem}
   .jr .h{font-size:.82rem;color:var(--muted)}
   .jr .r{overflow-wrap:anywhere;white-space:pre-wrap}
-  details.add>summary{list-style:none;cursor:pointer;color:var(--accent);font-weight:600;padding:6px 0}
+  details.add>summary{list-style:none;cursor:pointer;color:var(--accent);font-weight:600;padding:4px 0}
   details.add>summary::-webkit-details-marker{display:none}
   details.add[open]>summary{margin-bottom:10px}
   .empty{color:var(--muted);font-size:.95rem;padding:6px 0}
-  .savebar{position:sticky;bottom:12px;z-index:3}
+  .list .empty{padding:14px}
   /* heures */
   .duree{font-size:.9rem;color:var(--muted);margin:-4px 0 12px}
-  .head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
   .nav{display:flex;align-items:center;gap:6px}
   .nav button{width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:1.1rem;cursor:pointer}
   .nav span{min-width:8.5em;text-align:center;font-weight:600}
-  .total{font-size:1.6rem;font-weight:700;margin:8px 0 4px}
+  .total{font-size:1.6rem;font-weight:700;margin:8px 0 4px;font-variant-numeric:tabular-nums}
   .total small{font-size:.9rem;font-weight:500;color:var(--muted)}
   .entry{padding:10px 0;border-top:1px solid var(--line)}
-  .entry .l1{display:flex;justify-content:space-between;gap:8px;font-size:.95rem}
+  .entry .l1{display:flex;justify-content:space-between;gap:8px;font-size:.95rem;font-variant-numeric:tabular-nums}
   .entry .lieu{font-size:.9rem;font-weight:600;margin-top:2px}
   .entry .trav{font-size:.9rem;color:var(--muted);overflow-wrap:anywhere}
-  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:9}
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:9}
   .toast.on{opacity:1}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <main>
   <div class="top"><h1>Suivi projets</h1><small id="etat"></small></div>
   <nav class="tabs">
-    <a href="#actions" id="tab-actions">Suivi des actions</a>
-    <a href="#heures" id="tab-heures">Suivi des heures</a>
+    <a href="#actions" id="tab-actions">Actions</a>
+    <a href="#contacts" id="tab-contacts">Contacts</a>
+    <a href="#heures" id="tab-heures">Heures</a>
   </nav>
   <div id="vue"></div>
 </main>
@@ -126,9 +171,10 @@
 // Adresse de l'application Apps Script (Déployer > Nouveau déploiement > Application Web)
 const API_URL = 'https://script.google.com/macros/s/AKfycbwxck4dhHnRoHFjlIWbN4VynuajLYN9Suv5LH0g18LEXrq7hR9_e4ipYmnxHXSzMgdu/exec';
 
-const STATUTS = ['À faire','En cours','En attente','Terminé'];
-const SCL = s => 's-' + (s||'À faire').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s/g,'').toLowerCase();
-const TYPES = {Appel:'📞', Email:'✉️', Visite:'🏠', Note:'📝'};
+const URGENCES = ['Urgent','Peu urgent','À l’occasion'];
+const UCL = u => ({'Urgent':'urgent','Peu urgent':'peu'}[u] || 'occasion');
+const URANG = u => ({'Urgent':0,'Peu urgent':1}[u] ?? 2);
+const EQUIPE = ['Raph','Florian','Simon'];
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -137,7 +183,6 @@ const auj = () => new Date().toLocaleDateString('sv-SE');
 const fd = s => s ? new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
 const fdc = s => s ? new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short'}) : '';
 const nid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-const enRetard = a => a.deadline && a.deadline < auj() && a.statut !== 'Terminé';
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
 
 let code = store.get('code_projets');
@@ -147,11 +192,10 @@ if(!code) demanderCode();
 // ---------- données ----------
 let D = null;
 try{ D = JSON.parse(store.get('cache_projets') || 'null'); }catch(e){}
-let chargeEnCours = false;
 
 async function charger(){
   const avait = !!D;
-  chargeEnCours = true; $('etat').textContent = 'Synchronisation…';
+  $('etat').textContent = 'Synchronisation…';
   try{
     const r = await fetch(`${API_URL}?quoi=tout&code=${encodeURIComponent(code)}`);
     const d = await r.json();
@@ -162,12 +206,9 @@ async function charger(){
     $('etat').textContent = D ? 'Hors ligne · données en cache' : '';
     if(!D) $('vue').innerHTML = '<div class="card empty">Impossible de charger les données. Vérifiez la connexion puis rechargez la page.</div>';
   }
-  chargeEnCours = false;
-  // ne redessine pas un écran où l'on est en train de saisir
-  const h0 = (location.hash || '#actions').slice(1).split('/')[0];
-  if(D && (!avait || h0 === 'actions' || h0 === 'immeuble')) route();
+  const v = vueCourante().vue;
+  if(D && (!avait || ['actions','contacts'].includes(v))) route();
 }
-
 async function envoyer(op, data){
   const r = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({code, op, ...data}) });
   const d = await r.json();
@@ -176,235 +217,239 @@ async function envoyer(op, data){
   return d;
 }
 const imm = c => (D.immeubles||[]).find(i => i.code === c);
-const actionsDe = c => D.actions.filter(a => a.immeuble === c);
-const dernierJournal = id => D.journal.filter(j => j.action === id).sort((a,b) => b.date.localeCompare(a.date))[0];
+const personnes = () => [...new Set(EQUIPE.concat(D.contacts.map(c => c.nom).filter(Boolean)))];
+const optionsResp = sel => `<option value="">— À attribuer —</option>` + personnes().concat(sel && !personnes().includes(sel) ? [sel] : []).map(n => `<option${n===sel?' selected':''}>${esc(n)}</option>`).join('');
+const rangImm = c => { const k = D.immeubles.findIndex(i => i.code === c); return k < 0 ? 99 : k; };
+const etapesDe = id => D.etapes.filter(j => j.action === id).sort((a,b) => (b.date+b.id).localeCompare(a.date+a.id));
+const trier = as => as.sort((x,y) => (!!x.terminee - !!y.terminee) || URANG(x.urgence) - URANG(y.urgence) || rangImm(x.immeuble) - rangImm(y.immeuble) || (x.lot||'').localeCompare(y.lot||'', 'fr', {numeric:true}) || x.titre.localeCompare(y.titre));
 
 // ---------- navigation ----------
-let sale = false;   // modifications non enregistrées sur une fiche
-let filtre = store.get('filtre_projets') || 'ouvertes';
-let ignorer = false;
+let sale = false, ignorer = false;
+let F = { imm: store.get('pf_imm') || '', urg: store.get('pf_urg') || '', resp: store.get('pf_resp') || '', fini: store.get('pf_fini') === '1' };
 window.addEventListener('hashchange', () => {
   if(ignorer){ ignorer = false; return; }
   if(sale && !confirm('Des modifications ne sont pas enregistrées. Quitter quand même ?')){ ignorer = true; history.back(); return; }
   sale = false; route(); window.scrollTo(0,0);
 });
+function vueCourante(){
+  const hh = (location.hash || '#actions').slice(1); const k = hh.indexOf('-');
+  return k < 0 ? {vue: hh, arg: ''} : {vue: hh.slice(0,k), arg: hh.slice(k+1)};
+}
 function route(){
-  const h = (location.hash || '#actions').slice(1).split('/');
-  const heures = h[0] === 'heures';
-  [['tab-actions',!heures],['tab-heures',heures]].forEach(([t,on]) => on ? $(t).setAttribute('aria-current','page') : $(t).removeAttribute('aria-current'));
-  if(heures) return vueHeures();
+  const {vue, arg} = vueCourante();
+  const onglet = vue === 'heures' ? 'heures' : vue === 'contacts' ? 'contacts' : 'actions';
+  ['actions','contacts','heures'].forEach(t => t === onglet ? $('tab-'+t).setAttribute('aria-current','page') : $('tab-'+t).removeAttribute('aria-current'));
+  if(vue === 'heures') return vueHeures();
   if(!D){ $('vue').innerHTML = '<div class="card empty">Chargement…</div>'; return; }
-  if(h[0] === 'immeuble' && imm(h[1])) return vueImmeuble(h[1]);
-  if(h[0] === 'action' && D.actions.find(a => a.id === h[1])) return vueAction(h[1]);
-  if(h[0] === 'nouvelle') return vueNouvelle(h[1] || '');
-  vueAccueil();
+  if(vue === 'contacts') return vueContacts();
+  if(vue === 'action' && D.actions.find(a => a.id === arg)) return vueAction(arg);
+  if(vue === 'nouvelle') return vueNouvelle(arg);
+  vueListe();
 }
 
-// ---------- accueil : immeubles ----------
-function vueAccueil(){
-  const ouv = D.actions.filter(a => a.statut !== 'Terminé');
-  const ret = ouv.filter(enRetard);
-  const cartes = D.immeubles.map(i => {
-    const as = actionsDe(i.code).filter(a => a.statut !== 'Terminé');
-    const r = as.filter(enRetard).length;
-    return { i, n: as.length, r };
-  }).sort((a,b) => (b.n>0) - (a.n>0));
-  const autres = ouv.filter(a => !imm(a.immeuble));
+// ---------- une action dans la liste ----------
+function ligneAction(a){
+  const i = imm(a.immeuble); const ep = etapesDe(a.id);
+  return `<div class="li ur-${UCL(a.urgence)}${a.terminee?' fini':''}">
+    <a class="li-lien" href="#action-${a.id}">
+      <div class="li-top"><span class="u u-${UCL(a.urgence)}">${esc(a.urgence)}</span>${a.terminee ? '<span class="fin">Terminée</span>' : ''}</div>
+      <div class="li-titre"><span class="logt">${esc(i ? i.nom : 'Sans logement')}${a.lot ? ` · ${esc(a.lot)}` : ''}</span><span class="act">${esc(a.titre)}</span></div>
+      ${a.prochaine ? `<div class="next"><b>Prochaine étape</b>${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span></div>` : (!a.terminee ? `<div class="next vide">Prochaine étape à définir</div>` : '')}
+      ${a.personnes ? `<div class="pers">👥 ${esc(a.personnes)}</div>` : ''}
+    </a>
+    ${ep.length ? `<details class="passees"><summary>Étapes passées <span class="n">${ep.length}</span></summary>${ep.map(j => ligneEtape(j)).join('')}</details>` : ''}
+  </div>`;
+}
+function ligneEtape(j, suppr){
+  return `<div class="jr"><div class="ic" aria-hidden="true">✔︎</div>
+    <div style="min-width:0">${j.date ? `<div class="h">${fd(j.date)}</div>` : ''}<div class="r">${esc(j.texte)}</div></div>
+    ${suppr ? `<button type="button" class="del" data-del="etape|${esc(j.id)}">Supprimer</button>` : '<span></span>'}</div>`;
+}
+
+// ---------- liste des actions ----------
+function vueListe(){
+  let as = D.actions.slice();
+  if(!F.fini) as = as.filter(a => !a.terminee);
+  if(F.imm) as = as.filter(a => a.immeuble === F.imm);
+  if(F.urg) as = as.filter(a => a.urgence === F.urg);
+  if(F.resp) as = as.filter(a => F.resp === '-' ? !a.responsable : a.responsable === F.resp);
+  trier(as);
+  const resps = [...new Set(EQUIPE.concat(D.actions.map(a => a.responsable).filter(Boolean).sort((x,y) => x.localeCompare(y,'fr'))))];
+  if(F.resp && F.resp !== '-' && !resps.includes(F.resp)) resps.push(F.resp);
+  const ouv = D.actions.filter(a => !a.terminee);
+  const nu = ouv.filter(a => a.urgence === 'Urgent').length;
+  const groupes = URGENCES.map(u => [u, as.filter(a => a.urgence === u && !a.terminee)]).concat([['Terminées', as.filter(a => a.terminee)]]);
   $('vue').innerHTML = `
-    <div class="bar"><div><strong>${ouv.length}</strong> action${ouv.length>1?'s':''} en cours${ret.length?` · <span class="late">${ret.length} en retard</span>`:''}</div>
-      <a class="btn" href="#nouvelle">+ Nouvelle action</a></div>
-    <div class="grid">${cartes.map(({i,n,r}) => `
-      <a class="imm${n?'':' vide'}" href="#immeuble/${i.code}">
-        <span class="code">${esc(i.code)}</span>
-        <div class="nom">${esc(i.nom)}</div><div class="ville">${esc(i.ville)}</div>
-        <div class="cpt">${n ? `<strong>${n}</strong> action${n>1?'s':''} en cours` : '<span class="muted">Aucune action</span>'}${r?` · <span class="late">${r} en retard</span>`:''}</div>
-      </a>`).join('')}</div>
-    ${autres.length ? `<h3>Sans immeuble</h3>${autres.map(carteAction).join('')}` : ''}`;
-}
-
-function carteAction(a){
-  const j = dernierJournal(a.id); const r = enRetard(a);
-  return `<a class="act ${SCL(a.statut).replace('s-','st-')}${r?' retard':''}" href="#action/${a.id}">
-    <div class="t">${esc(a.titre)}</div>
-    <div class="m"><span class="chip ${SCL(a.statut)}">${esc(a.statut)}</span>
-      ${a.deadline ? `<span class="${r?'late':''}">Deadline ${fd(a.deadline)}${r?' · en retard':''}</span>` : ''}</div>
-    ${a.prochaine ? `<div class="n">➜ ${esc(a.prochaine)}</div>` : ''}
-    ${j ? `<div class="m">${TYPES[j.type]||''} ${fd(j.date)} · ${esc(j.resume.length>90 ? j.resume.slice(0,90)+'…' : j.resume)}</div>` : ''}
-  </a>`;
-}
-
-// ---------- immeuble ----------
-function vueImmeuble(c){
-  const i = imm(c);
-  let as = actionsDe(c);
-  const nTerm = as.filter(a => a.statut === 'Terminé').length;
-  if(filtre === 'ouvertes') as = as.filter(a => a.statut !== 'Terminé');
-  const ordre = a => [a.statut==='Terminé'?1:0, a.deadline||'9999', a.titre].join('|');
-  as.sort((x,y) => ordre(x) < ordre(y) ? -1 : 1);
-  $('vue').innerHTML = `
-    <a class="back" href="#actions">‹ Tous les immeubles</a>
-    <div class="bar"><div><span class="tag">${esc(i.code)}</span> <h2 style="display:inline">${esc(i.nom)}</h2><div class="muted" style="font-size:.88rem">${esc(i.ville)}</div></div>
-      <a class="btn" href="#nouvelle/${i.code}">+ Action</a></div>
-    <div class="bar"><div class="seg" role="group" aria-label="Filtre">
-      <button type="button" data-f="ouvertes" aria-pressed="${filtre==='ouvertes'}">En cours</button>
-      <button type="button" data-f="toutes" aria-pressed="${filtre==='toutes'}">Toutes${nTerm?` (dont ${nTerm} terminée${nTerm>1?'s':''})`:''}</button></div></div>
-    ${as.length ? as.map(carteAction).join('') : `<div class="card empty">${filtre==='ouvertes' ? 'Aucune action en cours pour cet immeuble.' : 'Aucune action pour cet immeuble.'}</div>`}`;
-  document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filtre = b.dataset.f; store.set('filtre_projets', filtre); vueImmeuble(c); });
+    <div class="bar"><div><strong>${ouv.length}</strong> action${ouv.length>1?'s':''} en cours${nu ? ` · <span class="late">${nu} urgente${nu>1?'s':''}</span>` : ''}</div>
+      <a class="btn" href="#nouvelle${F.imm ? '-'+F.imm : ''}">+ Nouvelle action</a></div>
+    <div class="filters">
+      <select id="fl-imm" aria-label="Logement"><option value="">Tous logements</option>${D.immeubles.map(i => `<option value="${esc(i.code)}"${F.imm===i.code?' selected':''}>${esc(i.nom)}</option>`).join('')}</select>
+      <select id="fl-urg" aria-label="Urgence"><option value="">Toutes urgences</option>${URGENCES.map(u => `<option${F.urg===u?' selected':''}>${esc(u)}</option>`).join('')}</select>
+      <select id="fl-resp" aria-label="Responsable"><option value="">Tous responsables</option>${resps.map(r => `<option value="${esc(r)}"${F.resp===r?' selected':''}>👤 ${esc(r)}</option>`).join('')}<option value="-"${F.resp==='-'?' selected':''}>Sans responsable</option></select>
+      <label class="chk"><input type="checkbox" id="fl-fini"${F.fini?' checked':''}> Afficher les terminées</label>
+    </div>
+    ${as.length ? groupes.filter(([,l]) => l.length).map(([u,l]) => `<h3>${esc(u)} <span class="n">${l.length}</span></h3><div class="list">${l.map(ligneAction).join('')}</div>`).join('')
+      : '<div class="card empty">Aucune action pour ces filtres.</div>'}`;
+  $('fl-imm').onchange = () => { F.imm = $('fl-imm').value; store.set('pf_imm', F.imm); vueListe(); };
+  $('fl-urg').onchange = () => { F.urg = $('fl-urg').value; store.set('pf_urg', F.urg); vueListe(); };
+  $('fl-resp').onchange = () => { F.resp = $('fl-resp').value; store.set('pf_resp', F.resp); vueListe(); };
+  $('fl-fini').onchange = () => { F.fini = $('fl-fini').checked; store.set('pf_fini', F.fini ? '1' : '0'); vueListe(); };
 }
 
 // ---------- fiche action ----------
 function vueAction(id){
   const a = D.actions.find(x => x.id === id);
   const i = imm(a.immeuble);
-  const contacts = D.contacts.filter(x => x.action === id);
-  const journal = D.journal.filter(x => x.action === id).sort((x,y) => (y.date + y.id).localeCompare(x.date + x.id));
-  const tousContacts = {}; D.contacts.forEach(x => { if(x.nom) tousContacts[x.nom] = x; });
+  const ep = etapesDe(id);
   $('vue').innerHTML = `
-    <a class="back" href="${i ? '#immeuble/'+i.code : '#actions'}">‹ ${i ? esc(i.nom) : 'Retour'}</a>
+    <a class="back" href="#actions">‹ Toutes les actions</a>
+    <div class="fiche-h"><span class="u u-${UCL(a.urgence)}" id="h-urg">${esc(a.urgence)}</span>
+      <div class="li-titre"><span class="logt">${esc(i ? i.nom : 'Sans logement')}${a.lot ? ` · ${esc(a.lot)}` : ''}</span><span class="act">${esc(a.titre)}</span></div></div>
     <form class="card" id="fiche" autocomplete="off">
-      <div class="f"><label for="a-titre">Action</label><input id="a-titre" value="${esc(a.titre)}" required></div>
-      <div class="f"><label>Statut</label><div class="pills" id="a-statut">${STATUTS.map(s => `<button type="button" class="${SCL(s)}" data-s="${esc(s)}" aria-pressed="${a.statut===s}">${esc(s)}</button>`).join('')}</div></div>
+      <div class="f"><label>Urgence</label><div class="pills" id="a-urg">${URGENCES.map(u => `<button type="button" class="u u-${UCL(u)}" data-v="${esc(u)}" aria-pressed="${a.urgence===u}">${esc(u)}</button>`).join('')}</div></div>
       <div class="row">
-        <div><label for="a-deadline">Deadline</label><input type="date" id="a-deadline" value="${esc(a.deadline)}"></div>
-        <div><label for="a-imm">Immeuble</label><select id="a-imm">${optionsImm(a.immeuble)}</select></div>
+        <div><label for="a-imm">Logement</label><select id="a-imm">${optionsImm(a.immeuble)}</select></div>
+        <div style="flex:0 0 38%"><label for="a-lot">Logement n° / étage</label><input id="a-lot" value="${esc(a.lot)}" placeholder="ex. Logement 20, 1er étage"></div>
       </div>
-      <div class="f"><label for="a-prochaine">Prochaine étape</label><input id="a-prochaine" value="${esc(a.prochaine)}" placeholder="ex. Rappeler M. Benita vendredi pour la date d'intervention"></div>
-      <div class="f"><label for="a-notes">Notes</label><textarea id="a-notes" rows="4">${esc(a.notes)}</textarea></div>
-      <div class="savebar"><button class="btn full" id="a-save" disabled>Enregistrer les modifications</button></div>
+      <div class="f"><label for="a-titre">Action</label><input id="a-titre" value="${esc(a.titre)}" required></div>
+      <div class="f f-next"><label for="a-prochaine">Prochaine étape</label><textarea id="a-prochaine" rows="2" placeholder="ex. Faire passer les intervenants">${esc(a.prochaine)}</textarea>
+        <div class="resp-f"><label for="a-resp">Responsable</label><select id="a-resp">${optionsResp(a.responsable)}</select></div>
+        ${a.prochaine ? `<button type="button" class="lien" id="a-faite">✔︎ Prochaine étape faite : la passer dans les étapes passées</button>` : ''}</div>
+      <div class="f"><label for="a-pers">Personnes impliquées</label><input id="a-pers" value="${esc(a.personnes)}" placeholder="ex. Gerald Benitah, Simon"></div>
+      <div class="f"><label for="a-notes">Commentaire</label><textarea id="a-notes" rows="3">${esc(a.notes)}</textarea></div>
+      <button class="btn full" id="a-save" disabled>Enregistrer les modifications</button>
       <div class="msg" id="a-msg"></div>
     </form>
 
-    <h3>Contacts</h3>
+    <details class="card passees-fiche" id="d-etapes"><summary>Étapes passées <span class="n" id="n-etapes">${ep.length}</span></summary>
+      <form id="f-etape" autocomplete="off" style="margin:10px 0 6px">
+        <div class="row"><div style="flex:0 0 11em"><label for="e-date">Date</label><input type="date" id="e-date" value="${auj()}"></div></div>
+        <div class="f"><label for="e-texte">Ce qui a été fait</label><textarea id="e-texte" rows="2" placeholder="ex. Appelé Gerald Benitah : il passe mardi" required></textarea></div>
+        <button class="btn full">Ajouter une étape passée</button>
+      </form>
+      <div id="lst-etapes" style="margin-top:12px">${listeEtapes(ep)}</div>
+    </details>
+
+    <button type="button" class="btn full ${a.terminee ? '' : 'sec'}" id="a-fin" style="margin-top:6px">${a.terminee ? 'Rouvrir l’action' : '✔︎ Marquer l’action comme terminée'}</button>`;
+
+  let urgence = a.urgence;
+  const marquer = () => { sale = true; $('a-save').disabled = false; $('a-msg').textContent = ''; };
+  ['a-titre','a-imm','a-lot','a-prochaine','a-resp','a-pers','a-notes'].forEach(k => $(k).addEventListener('input', marquer));
+  $('a-urg').querySelectorAll('button').forEach(b => b.onclick = () => { urgence = b.dataset.v; $('a-urg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); marquer(); });
+  const lireChamps = () => ({ titre: $('a-titre').value.trim(), urgence, immeuble: $('a-imm').value, lot: $('a-lot').value.trim(),
+      prochaine: $('a-prochaine').value.trim(), responsable: $('a-resp').value, personnes: $('a-pers').value.trim(), notes: $('a-notes').value.trim() });
+  async function sauver(champs, msgOk){
+    const avant = {...a}; Object.assign(a, champs, {maj: auj()});
+    try{ await envoyer('majAction', {id, champs}); sale = false; return true; }
+    catch(e){ Object.assign(a, avant); toast('Erreur, réessayez'); return false; }
+  }
+  $('fiche').onsubmit = async ev => {
+    ev.preventDefault();
+    const champs = lireChamps();
+    if(!champs.titre){ $('a-msg').className='msg err'; $('a-msg').textContent='Le titre ne peut pas être vide.'; return; }
+    $('a-save').disabled = true; $('a-msg').className='msg'; $('a-msg').textContent='Enregistrement…';
+    if(await sauver(champs)){ vueAction(id); toast('Enregistré'); } else { $('a-save').disabled = false; $('a-msg').textContent=''; }
+  };
+  if($('a-faite')) $('a-faite').onclick = async () => {
+    const champs = lireChamps(); const faite = champs.prochaine; if(!faite) return;
+    const j = { id: nid('E'), action: id, date: auj(), texte: faite + (champs.responsable ? ` (${champs.responsable})` : '') };
+    D.etapes.push(j); champs.prochaine = ''; champs.responsable = '';
+    try{ await envoyer('ajouterEtape', j); }catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); toast('Erreur, réessayez'); return; }
+    if(await sauver(champs)){ vueAction(id); $('d-etapes').open = true; $('a-prochaine').focus(); toast('Étape passée ajoutée · saisissez la suivante'); }
+  };
+  $('a-fin').onclick = async () => { if(await sauver({terminee: !a.terminee})){ toast(a.terminee ? 'Action terminée' : 'Action rouverte'); location.hash = '#actions'; } };
+
+  $('f-etape').onsubmit = async ev => {
+    ev.preventDefault();
+    const j = { id: nid('E'), action: id, date: $('e-date').value || auj(), texte: $('e-texte').value.trim() };
+    if(!j.texte) return;
+    D.etapes.push(j); $('e-texte').value = ''; majEtapes(id);
+    try{ await envoyer('ajouterEtape', j); toast('Étape ajoutée'); }
+    catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); majEtapes(id); toast('Erreur : étape non enregistrée'); }
+  };
+  brancherSuppressions(() => majEtapes(id));
+}
+function listeEtapes(ep){ return ep.length ? ep.map(j => ligneEtape(j, true)).join('') : '<div class="empty">Aucune étape passée pour l’instant.</div>'; }
+function majEtapes(id){ const ep = etapesDe(id); $('lst-etapes').innerHTML = listeEtapes(ep); $('n-etapes').textContent = ep.length; brancherSuppressions(() => majEtapes(id)); }
+function brancherSuppressions(apres){
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if(!b.classList.contains('sure')){ b.classList.add('sure'); b.textContent = 'Confirmer ?'; setTimeout(() => { b.classList.remove('sure'); b.textContent = 'Supprimer'; }, 3000); return; }
+    const [quoi, did] = b.dataset.del.split('|');
+    const liste = quoi === 'contact' ? 'contacts' : 'etapes';
+    const garde = D[liste]; D[liste] = garde.filter(x => x.id !== did); apres();
+    try{ await envoyer('supprimer', {quoi, id: did}); toast('Supprimé'); }
+    catch(e){ D[liste] = garde; apres(); toast('Erreur : suppression non faite'); }
+  });
+}
+function optionsImm(sel){
+  return `<option value="">— Sans logement —</option>` + D.immeubles.map(i => `<option value="${esc(i.code)}"${i.code===sel?' selected':''}>${esc(i.nom)}</option>`).join('');
+}
+
+// ---------- contacts ----------
+function ligneContact(c){
+  const tel = c.telephone ? `<a href="tel:${esc(c.telephone.replace(/[^\d+]/g,''))}">📞 ${esc(c.telephone)}</a>` : '';
+  const mail = c.email ? `<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>` : '';
+  return `<div class="contact"><div style="min-width:0"><div class="nm">${esc(c.nom)}</div>${c.fonction?`<div class="rl">${esc(c.fonction)}</div>`:''}
+    <div class="lk">${tel}${mail}${!tel && !mail ? '<span class="nolk">Téléphone et email à compléter</span>' : ''}</div></div>
+    <button type="button" class="del" data-del="contact|${esc(c.id)}">Supprimer</button></div>`;
+}
+function vueContacts(){
+  const cs = D.contacts.slice().sort((x,y) => x.nom.localeCompare(y.nom, 'fr'));
+  $('vue').innerHTML = `
     <div class="card">
-      <div id="lst-contacts">${contacts.length ? contacts.map(ligneContact).join('') : '<div class="empty">Aucun contact pour cette action.</div>'}</div>
       <details class="add" id="add-contact"><summary>+ Ajouter un contact</summary>
         <form id="f-contact" autocomplete="off">
-          <div class="row"><div><label for="c-nom">Nom</label><input id="c-nom" list="dl-contacts" placeholder="ex. M. Benita" required></div>
-            <div><label for="c-role">Rôle</label><input id="c-role" placeholder="ex. Chauffagiste"></div></div>
+          <div class="row"><div><label for="c-nom">Nom</label><input id="c-nom" placeholder="ex. Julie François" required></div>
+            <div><label for="c-fct">Fonction</label><input id="c-fct" placeholder="ex. Evel Immobilier, gestionnaire"></div></div>
           <div class="row"><div><label for="c-tel">Téléphone</label><input id="c-tel" type="tel" inputmode="tel"></div>
             <div><label for="c-mail">Email</label><input id="c-mail" type="email" inputmode="email"></div></div>
-          <datalist id="dl-contacts">${Object.keys(tousContacts).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
           <button class="btn full">Ajouter le contact</button>
         </form>
       </details>
     </div>
-
-    <h3>Journal (appels, emails, visites)</h3>
-    <div class="card">
-      <form id="f-journal" autocomplete="off" style="margin-bottom:6px">
-        <div class="f"><div class="seg" id="j-type" role="group" aria-label="Type">${Object.entries(TYPES).map(([t,ic],k) => `<button type="button" data-t="${t}" aria-pressed="${k===0}">${ic} ${t}</button>`).join('')}</div></div>
-        <div class="row"><div style="flex:0 0 11em"><label for="j-date">Date</label><input type="date" id="j-date" value="${auj()}"></div></div>
-        <div class="f"><label for="j-resume">Résumé</label><textarea id="j-resume" rows="2" placeholder="ex. Appelé M. Benita : passe mardi 14h pour finir le raccordement" required></textarea></div>
-        <button class="btn full">Ajouter au journal</button>
-      </form>
-      <div id="lst-journal" style="margin-top:12px">${journal.length ? journal.map(ligneJournal).join('') : '<div class="empty">Rien de noté pour l’instant.</div>'}</div>
-    </div>`;
-
-  // fiche : détecter les modifications
-  let statut = a.statut;
-  const marquer = () => { sale = true; $('a-save').disabled = false; $('a-msg').textContent = ''; };
-  ['a-titre','a-deadline','a-imm','a-prochaine','a-notes'].forEach(k => $(k).addEventListener('input', marquer));
-  $('a-statut').querySelectorAll('button').forEach(b => b.onclick = () => {
-    statut = b.dataset.s; $('a-statut').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); marquer();
-  });
-  $('fiche').onsubmit = async ev => {
-    ev.preventDefault();
-    const champs = { titre: $('a-titre').value.trim(), statut, deadline: $('a-deadline').value, immeuble: $('a-imm').value,
-      prochaine: $('a-prochaine').value.trim(), notes: $('a-notes').value.trim() };
-    if(!champs.titre){ $('a-msg').className='msg err'; $('a-msg').textContent='Le titre ne peut pas être vide.'; return; }
-    $('a-save').disabled = true; $('a-msg').className='msg'; $('a-msg').textContent='Enregistrement…';
-    try{
-      const avant = {...a}; Object.assign(a, champs, {maj: auj()});
-      try{ await envoyer('majAction', {id, champs}); }catch(e){ Object.assign(a, avant); throw e; }
-      sale = false; $('a-msg').textContent = 'Enregistré.'; setTimeout(() => { if($('a-msg')) $('a-msg').textContent=''; }, 2500);
-    }catch(e){ $('a-msg').className='msg err'; $('a-msg').textContent='Erreur, réessayez.'; $('a-save').disabled=false; }
-  };
-
-  // contacts
-  $('c-nom').addEventListener('change', () => { const c = tousContacts[$('c-nom').value]; if(c){ if(!$('c-role').value) $('c-role').value=c.role; if(!$('c-tel').value) $('c-tel').value=c.telephone; if(!$('c-mail').value) $('c-mail').value=c.email; } });
+    <h3>Contacts <span class="n">${cs.length}</span></h3>
+    <div class="card">${cs.length ? cs.map(ligneContact).join('') : '<div class="empty">Aucun contact pour l’instant.</div>'}</div>`;
   $('f-contact').onsubmit = async ev => {
     ev.preventDefault();
-    const c = { id: nid('C'), action: id, nom: $('c-nom').value.trim(), role: $('c-role').value.trim(), telephone: $('c-tel').value.trim(), email: $('c-mail').value.trim() };
+    const c = { id: nid('C'), nom: $('c-nom').value.trim(), fonction: $('c-fct').value.trim(), telephone: $('c-tel').value.trim(), email: $('c-mail').value.trim() };
     if(!c.nom) return;
-    D.contacts.push(c); vueActionPartielle(id);
-    try{ await envoyer('ajouterContact', c); toast('Contact ajouté'); }
-    catch(e){ D.contacts = D.contacts.filter(x => x.id !== c.id); vueActionPartielle(id); toast('Erreur : contact non enregistré'); }
+    D.contacts.push(c); vueContacts(); toast('Contact ajouté');
+    try{ await envoyer('ajouterContact', c); }
+    catch(e){ D.contacts = D.contacts.filter(x => x.id !== c.id); vueContacts(); toast('Erreur : contact non enregistré'); }
   };
-
-  // journal
-  let jtype = 'Appel';
-  $('j-type').querySelectorAll('button').forEach(b => b.onclick = () => { jtype = b.dataset.t; $('j-type').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-  $('f-journal').onsubmit = async ev => {
-    ev.preventDefault();
-    const j = { id: nid('J'), action: id, date: $('j-date').value || auj(), type: jtype, resume: $('j-resume').value.trim() };
-    if(!j.resume) return;
-    D.journal.push(j); $('j-resume').value = ''; vueActionPartielle(id);
-    try{ await envoyer('ajouterJournal', j); toast('Ajouté au journal'); }
-    catch(e){ D.journal = D.journal.filter(x => x.id !== j.id); vueActionPartielle(id); toast('Erreur : entrée non enregistrée'); }
-  };
-  brancherSuppressions(id);
-}
-
-// redessine uniquement les listes de contacts et de journal (garde la saisie de la fiche)
-function vueActionPartielle(id){
-  const contacts = D.contacts.filter(x => x.action === id);
-  const journal = D.journal.filter(x => x.action === id).sort((x,y) => (y.date + y.id).localeCompare(x.date + x.id));
-  $('lst-contacts').innerHTML = contacts.length ? contacts.map(ligneContact).join('') : '<div class="empty">Aucun contact pour cette action.</div>';
-  $('lst-journal').innerHTML = journal.length ? journal.map(ligneJournal).join('') : '<div class="empty">Rien de noté pour l’instant.</div>';
-  if($('f-contact')){ $('f-contact').reset(); $('add-contact').open = false; }
-  brancherSuppressions(id);
-}
-function brancherSuppressions(id){
-  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-    if(!b.classList.contains('sure')){ b.classList.add('sure'); b.textContent = 'Confirmer ?'; setTimeout(() => { b.classList.remove('sure'); b.textContent = 'Supprimer'; }, 3000); return; }
-    const [quoi, did] = b.dataset.del.split('|');
-    const liste = quoi === 'contact' ? 'contacts' : 'journal';
-    const garde = D[liste]; D[liste] = garde.filter(x => x.id !== did); vueActionPartielle(id);
-    try{ await envoyer('supprimer', {quoi, id: did}); toast('Supprimé'); }
-    catch(e){ D[liste] = garde; vueActionPartielle(id); toast('Erreur : suppression non faite'); }
-  });
-}
-function ligneContact(c){
-  const tel = c.telephone ? `<a href="tel:${esc(c.telephone.replace(/[^\d+]/g,''))}">📞 ${esc(c.telephone)}</a>` : '';
-  const mail = c.email ? `<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>` : '';
-  return `<div class="contact"><div style="min-width:0"><div class="nm">${esc(c.nom)}</div>${c.role?`<div class="rl">${esc(c.role)}</div>`:''}<div class="lk">${tel}${mail}</div></div>
-    <button type="button" class="del" data-del="contact|${esc(c.id)}">Supprimer</button></div>`;
-}
-function ligneJournal(j){
-  return `<div class="jr"><div class="ic" aria-hidden="true">${TYPES[j.type]||'📝'}</div>
-    <div style="min-width:0"><div class="h">${esc(j.type)} · ${fdc(j.date)}</div><div class="r">${esc(j.resume)}</div></div>
-    <button type="button" class="del" data-del="journal|${esc(j.id)}">Supprimer</button></div>`;
-}
-function optionsImm(sel){
-  return `<option value="">— Sans immeuble —</option>` + D.immeubles.map(i => `<option value="${esc(i.code)}"${i.code===sel?' selected':''}>${esc(i.code)} · ${esc(i.nom)}</option>`).join('');
+  brancherSuppressions(vueContacts);
 }
 
 // ---------- nouvelle action ----------
 function vueNouvelle(c){
   $('vue').innerHTML = `
-    <a class="back" href="${imm(c) ? '#immeuble/'+c : '#actions'}">‹ Annuler</a>
+    <a class="back" href="#actions">‹ Annuler</a>
     <form class="card" id="f-new" autocomplete="off">
       <h2 style="margin-bottom:12px">Nouvelle action</h2>
-      <div class="f"><label for="n-imm">Immeuble</label><select id="n-imm">${optionsImm(c)}</select></div>
-      <div class="f"><label for="n-titre">Action</label><input id="n-titre" placeholder="ex. Trouver un plombier pour la colonne d'eau" required></div>
-      <div class="row"><div><label for="n-deadline">Deadline</label><input type="date" id="n-deadline"></div><div></div></div>
-      <div class="f"><label for="n-prochaine">Prochaine étape</label><input id="n-prochaine" placeholder="ex. Demander 3 devis"></div>
-      <div class="f"><label for="n-notes">Notes</label><textarea id="n-notes"></textarea></div>
+      <div class="f"><label>Urgence</label><div class="pills" id="n-urg">${URGENCES.map(u => `<button type="button" class="u u-${UCL(u)}" data-v="${esc(u)}" aria-pressed="${u==='Peu urgent'}">${esc(u)}</button>`).join('')}</div></div>
+      <div class="row">
+        <div><label for="n-imm">Logement</label><select id="n-imm">${optionsImm(c)}</select></div>
+        <div style="flex:0 0 38%"><label for="n-lot">Logement n° / étage</label><input id="n-lot" placeholder="ex. Logement 20"></div>
+      </div>
+      <div class="f"><label for="n-titre">Action</label><input id="n-titre" placeholder="ex. Interphone" required></div>
+      <div class="f f-next"><label for="n-prochaine">Prochaine étape</label><textarea id="n-prochaine" rows="2" placeholder="ex. Demander 3 devis"></textarea>
+        <div class="resp-f"><label for="n-resp">Responsable</label><select id="n-resp">${optionsResp('')}</select></div></div>
+      <div class="f"><label for="n-pers">Personnes impliquées</label><input id="n-pers" placeholder="ex. Gerald Benitah, Simon"></div>
+      <div class="f"><label for="n-notes">Commentaire</label><textarea id="n-notes"></textarea></div>
       <button class="btn full" id="n-ok">Créer l’action</button>
       <div class="msg" id="n-msg"></div>
     </form>`;
-  $('n-titre').focus();
+  let urgence = 'Peu urgent';
+  $('n-urg').querySelectorAll('button').forEach(b => b.onclick = () => { urgence = b.dataset.v; $('n-urg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('f-new').onsubmit = async ev => {
     ev.preventDefault();
-    const a = { id: nid('A'), immeuble: $('n-imm').value, titre: $('n-titre').value.trim(), statut: 'À faire',
-      deadline: $('n-deadline').value, prochaine: $('n-prochaine').value.trim(), notes: $('n-notes').value.trim(), cree: auj(), maj: auj() };
+    const a = { id: nid('A'), immeuble: $('n-imm').value, lot: $('n-lot').value.trim(), titre: $('n-titre').value.trim(), urgence,
+      prochaine: $('n-prochaine').value.trim(), responsable: $('n-resp').value, personnes: $('n-pers').value.trim(), notes: $('n-notes').value.trim(), terminee: false, cree: auj(), maj: auj() };
     if(!a.titre) return;
     $('n-ok').disabled = true; $('n-msg').className='msg'; $('n-msg').textContent = 'Création…';
-    try{
-      D.actions.push(a);
-      try{ await envoyer('ajouterAction', a); }catch(e){ D.actions = D.actions.filter(x => x.id !== a.id); throw e; }
-      location.hash = '#action/' + a.id;
-    }catch(e){ $('n-ok').disabled = false; $('n-msg').className='msg err'; $('n-msg').textContent = 'Erreur, réessayez.'; }
+    D.actions.push(a);
+    try{ await envoyer('ajouterAction', a); location.hash = '#action-' + a.id; }
+    catch(e){ D.actions = D.actions.filter(x => x.id !== a.id); $('n-ok').disabled = false; $('n-msg').className='msg err'; $('n-msg').textContent = 'Erreur, réessayez.'; }
   };
 }
 
@@ -444,7 +489,7 @@ function vueHeures(){
     const diff = minutes(f) - minutes(d);
     $('h-duree').textContent = diff > 0 ? 'Durée : ' + fmtHM(diff/60) : 'La fin doit être après le début.';
   };
-  const effacer = () => { $('h-msg').textContent=''; $('h-msg').className='msg'; };
+  const effacer = () => { if(!$('h-msg')) return; $('h-msg').textContent=''; $('h-msg').className='msg'; };
   ['h-date','h-debut','h-fin','h-lieu','h-travail'].forEach(k => $(k).addEventListener('input', () => { effacer(); if(k==='h-debut'||k==='h-fin') majDuree(); }));
   $('prec').onclick = () => { mois = decaler(mois,-1); chargerHeures(); };
   $('suiv').onclick = () => { mois = decaler(mois,1); chargerHeures(); };

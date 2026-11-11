@@ -86,6 +86,8 @@
   .next.vide{background:transparent;border-style:dashed;color:var(--muted);font-style:italic}
   .pers{margin-top:6px;font-size:.9rem;color:var(--ink)}
   .li-next{display:block;margin:0 14px 10px 18px;text-decoration:none;color:inherit}
+  .li-next b{display:inline;font-size:.78rem}
+  .li-next .resp{margin-top:3px}
   a.li-next.vide{color:var(--muted)}
   .done{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:6px 12px 6px 8px;border:1px solid var(--ok);border-radius:999px;color:var(--ok);font-weight:700;font-size:.9rem;cursor:pointer;background:var(--card);text-transform:none;letter-spacing:0}
   .done input{width:20px;height:20px;margin:0;padding:0;-webkit-appearance:auto;appearance:auto;accent-color:var(--ok);cursor:pointer}
@@ -262,8 +264,7 @@ function ligneAction(a){
       <div class="li-titre"><span class="logt">${esc(i ? i.nom : 'Sans logement')}${a.lot ? ` · ${esc(a.lot)}` : ''}</span><span class="act">${esc(a.titre)}</span></div>
       ${a.personnes ? `<div class="pers">👥 ${esc(a.personnes)}</div>` : ''}
     </a>
-    ${a.prochaine ? `<div class="next li-next"><b>Prochaine étape</b>${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span>
-        <label class="done"><input type="checkbox" data-fait="${a.id}"> Étape terminée</label></div>`
+    ${a.prochaine ? `<a class="next li-next" href="#action-${a.id}"><b>Prochaine étape :</b> ${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span></a>`
       : (!a.terminee ? `<a class="next vide li-next" href="#action-${a.id}">Prochaine étape à définir ›</a>` : '')}
     ${ep.length ? `<details class="passees"><summary>Étapes passées <span class="n">${ep.length}</span></summary>${ep.map(j => ligneEtape(j)).join('')}</details>` : ''}
   </div>`;
@@ -298,10 +299,6 @@ function vueListe(){
     </div>
     ${as.length ? groupes.filter(([,l]) => l.length).map(([u,l]) => `<h3>${esc(u)} <span class="n">${l.length}</span></h3><div class="list">${l.map(ligneAction).join('')}</div>`).join('')
       : '<div class="card empty">Aucune action pour ces filtres.</div>'}`;
-  document.querySelectorAll('[data-fait]').forEach(c => c.onchange = async () => {
-    const a = D.actions.find(x => x.id === c.dataset.fait); c.disabled = true;
-    if(await terminerEtape(a)) location.hash = '#action-' + a.id; else { c.checked = false; c.disabled = false; }
-  });
   $('fl-imm').onchange = () => { F.imm = $('fl-imm').value; store.set('pf_imm', F.imm); vueListe(); };
   $('fl-urg').onchange = () => { F.urg = $('fl-urg').value; store.set('pf_urg', F.urg); vueListe(); };
   $('fl-resp').onchange = () => { F.resp = $('fl-resp').value; store.set('pf_resp', F.resp); vueListe(); };

@@ -130,6 +130,11 @@
   .contact .nolk{font-size:.85rem;color:var(--muted);font-style:italic}
   .del{background:none;border:0;color:var(--muted);font:inherit;font-size:.82rem;cursor:pointer;padding:4px;align-self:flex-start;white-space:nowrap}
   .del.sure{color:var(--bad);font-weight:700}
+  .ct-btns{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .mod{background:none;border:0;color:var(--accent);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;padding:4px;white-space:nowrap}
+  .ct-edit{padding:12px 0;border-top:1px solid var(--line)}
+  .ct-edit:first-child{border-top:0}
+  .btn.sec2{background:var(--card);color:var(--ink);border:1px solid var(--line)}
   .grp{margin-bottom:12px}
   .grp-h{display:flex;flex-direction:column;gap:2px;margin:18px 0 6px}
   .grp-h h2{font-size:1rem}
@@ -396,9 +401,35 @@ function optionsImm(sel){
 function ligneContact(c){
   const tel = c.telephone ? `<a href="tel:${esc(c.telephone.replace(/[^\d+]/g,''))}">📞 ${esc(c.telephone)}</a>` : '';
   const mail = c.email ? `<a href="mailto:${esc(c.email)}">✉️ ${esc(c.email)}</a>` : '';
-  return `<div class="contact"><div style="min-width:0"><div class="nm">${esc(c.nom)}</div>${c.fonction?`<div class="rl">${esc(c.fonction)}</div>`:''}
+  return `<div class="contact" id="ct-${esc(c.id)}"><div style="min-width:0"><div class="nm">${esc(c.nom)}</div>${c.fonction?`<div class="rl">${esc(c.fonction)}</div>`:''}
     <div class="lk">${tel}${mail}${!tel && !mail ? '<span class="nolk">Téléphone et email à compléter</span>' : ''}</div></div>
-    <button type="button" class="del" data-del="contact|${esc(c.id)}">Supprimer</button></div>`;
+    <div class="ct-btns"><button type="button" class="mod" data-mod="${esc(c.id)}">Modifier</button><button type="button" class="del" data-del="contact|${esc(c.id)}">Supprimer</button></div></div>`;
+}
+function formContact(c){
+  return `<form class="ct-edit" data-id="${esc(c.id)}" autocomplete="off">
+    <div class="row"><div><label for="m-nom">Nom</label><input id="m-nom" value="${esc(c.nom)}" required></div>
+      <div><label for="m-fct">Fonction</label><input id="m-fct" value="${esc(c.fonction)}"></div></div>
+    <div class="row"><div><label for="m-tel">Téléphone</label><input id="m-tel" type="tel" inputmode="tel" value="${esc(c.telephone)}"></div>
+      <div><label for="m-mail">Email</label><input id="m-mail" type="email" inputmode="email" value="${esc(c.email)}"></div></div>
+    <div class="row" style="margin:0"><div><button class="btn full">Enregistrer</button></div><div><button type="button" class="btn full sec2" id="m-annuler">Annuler</button></div></div>
+  </form>`;
+}
+function brancherModifs(){
+  document.querySelectorAll('[data-mod]').forEach(b => b.onclick = () => {
+    if(document.querySelector('.ct-edit')) vueContacts();
+    const c = D.contacts.find(x => x.id === b.dataset.mod); if(!c) return;
+    const el = document.getElementById('ct-' + c.id); el.outerHTML = formContact(c);
+    $('m-tel').focus();
+    $('m-annuler').onclick = () => vueContacts();
+    document.querySelector('.ct-edit').onsubmit = async ev => {
+      ev.preventDefault();
+      const champs = { nom: $('m-nom').value.trim(), fonction: $('m-fct').value.trim(), telephone: $('m-tel').value.trim(), email: $('m-mail').value.trim() };
+      if(!champs.nom) return;
+      const avant = {...c}; Object.assign(c, champs); vueContacts();
+      try{ await envoyer('majContact', {id: c.id, champs}); toast('Contact enregistré'); }
+      catch(e){ Object.assign(c, avant); vueContacts(); toast('Erreur : ' + e.message); }
+    };
+  });
 }
 function vueContacts(){
   const cs = D.contacts.slice().sort((x,y) => x.nom.localeCompare(y.nom, 'fr'));
@@ -425,6 +456,7 @@ function vueContacts(){
     catch(e){ D.contacts = D.contacts.filter(x => x.id !== c.id); vueContacts(); toast('Erreur : contact non enregistré'); }
   };
   brancherSuppressions(vueContacts);
+  brancherModifs();
 }
 
 // ---------- nouvelle action ----------

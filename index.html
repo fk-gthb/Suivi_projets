@@ -188,7 +188,7 @@ const auj = () => new Date().toLocaleDateString('sv-SE');
 const fd = s => s ? new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
 const fdc = s => s ? new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short'}) : '';
 const nid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2200); }
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'), m.startsWith('Erreur') ? 9000 : 2200); }
 
 let code = store.get('code_projets');
 function demanderCode(){ code = prompt("Code d'accès :") || ''; store.set('code_projets', code); }
@@ -216,7 +216,8 @@ async function charger(){
 }
 async function envoyer(op, data){
   const r = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({code, op, ...data}) });
-  const d = await r.json();
+  const brut = await r.text();
+  let d; try{ d = JSON.parse(brut); }catch(e){ const m = brut.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').match(/(Exception|Error|Erreur)[^.]{0,160}/i); throw new Error(m ? m[0] : 'réponse inattendue du script (HTTP ' + r.status + ')'); }
   if(!d.ok){ if(d.erreur==='code'){ store.del('code_projets'); demanderCode(); } throw new Error(d.erreur); }
   store.set('cache_projets', JSON.stringify(D));
   return d;
@@ -347,7 +348,7 @@ function vueAction(id){
   async function sauver(champs, msgOk){
     const avant = {...a}; Object.assign(a, champs, {maj: auj()});
     try{ await envoyer('majAction', {id, champs}); sale = false; return true; }
-    catch(e){ Object.assign(a, avant); toast('Erreur, réessayez'); return false; }
+    catch(e){ Object.assign(a, avant); toast('Erreur : ' + e.message); return false; }
   }
   $('fiche').onsubmit = async ev => {
     ev.preventDefault();
@@ -375,7 +376,7 @@ async function terminerEtape(a, champs){
   const avant = {...a};
   D.etapes.push(j); Object.assign(a, maj, {maj: auj()});
   try{ await envoyer('ajouterEtape', j); await envoyer('majAction', {id: a.id, champs: maj}); }
-  catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); Object.assign(a, avant); toast('Erreur, réessayez'); return false; }
+  catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); Object.assign(a, avant); toast('Erreur : ' + e.message); return false; }
   toast(`Étape passée le ${fd(j.date)} · indiquez la prochaine étape`);
   return true;
 }

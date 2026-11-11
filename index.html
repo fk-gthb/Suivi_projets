@@ -98,6 +98,7 @@
   details.passees>summary::before,details.passees-fiche>summary::before{content:"▸";transition:transform .15s;display:inline-block}
   details[open].passees>summary::before,details[open].passees-fiche>summary::before{transform:rotate(90deg)}
   details.passees .jr{padding:8px 0}
+  .com{margin-top:6px;padding:8px 10px;background:var(--sunk);border-radius:7px;font-size:.92rem;white-space:pre-wrap;overflow-wrap:anywhere}
   details.passees-fiche>summary{font-size:1rem}
   .n{color:var(--muted);font-weight:500}
   .chk{display:flex;align-items:center;gap:6px;font-size:.92rem;color:var(--muted);margin:0}
@@ -271,6 +272,7 @@ function ligneAction(a){
     </a>
     ${a.prochaine ? `<a class="next li-next" href="#action-${a.id}"><b>Prochaine étape :</b> ${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span></a>`
       : (!a.terminee ? `<a class="next vide li-next" href="#action-${a.id}">Prochaine étape à définir ›</a>` : '')}
+    ${a.notes ? `<details class="passees"><summary>Commentaire</summary><div class="com">${esc(a.notes)}</div></details>` : ''}
   </div>`;
 }
 function ligneEtape(j, suppr){

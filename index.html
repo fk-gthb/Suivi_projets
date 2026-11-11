@@ -355,7 +355,7 @@ function vueAction(id){
     const champs = lireChamps();
     if(!champs.titre){ $('a-msg').className='msg err'; $('a-msg').textContent='Le titre ne peut pas être vide.'; return; }
     $('a-save').disabled = true; $('a-msg').className='msg'; $('a-msg').textContent='Enregistrement…';
-    if(await sauver(champs)){ vueAction(id); toast('Enregistré'); } else { $('a-save').disabled = false; $('a-msg').textContent=''; }
+    if(await sauver(champs)){ toast('Enregistré'); location.hash = '#actions'; } else { $('a-save').disabled = false; $('a-msg').textContent=''; }
   };
   if($('a-faite')) $('a-faite').onchange = async () => {
     $('a-faite').disabled = true;

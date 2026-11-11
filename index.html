@@ -84,7 +84,12 @@
   .next{margin-top:8px;background:var(--next);border:1px solid var(--next-line);border-radius:7px;padding:6px 9px;font-size:.93rem}
   .next b{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;display:block;color:var(--warn)}
   .next.vide{background:transparent;border-style:dashed;color:var(--muted);font-style:italic}
-  .pers{margin-top:6px;font-size:.88rem;color:var(--muted)}
+  .pers{margin-top:6px;font-size:.9rem;color:var(--ink)}
+  .li-next{display:block;margin:0 14px 10px 18px;text-decoration:none;color:inherit}
+  a.li-next.vide{color:var(--muted)}
+  .done{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:6px 12px 6px 8px;border:1px solid var(--ok);border-radius:999px;color:var(--ok);font-weight:700;font-size:.9rem;cursor:pointer;background:var(--card);text-transform:none;letter-spacing:0}
+  .done input{width:20px;height:20px;margin:0;padding:0;-webkit-appearance:auto;appearance:auto;accent-color:var(--ok);cursor:pointer}
+  .f-next label.done{color:var(--ok);font-size:.9rem;text-transform:none;letter-spacing:0}
   details.passees{padding:0 14px 10px 18px}
   details.passees>summary,details.passees-fiche>summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:.9rem;list-style:none;display:inline-flex;gap:6px;align-items:baseline}
   details.passees>summary::-webkit-details-marker,details.passees-fiche>summary::-webkit-details-marker{display:none}
@@ -220,7 +225,7 @@ const imm = c => (D.immeubles||[]).find(i => i.code === c);
 const personnes = () => [...new Set(EQUIPE.concat(D.contacts.map(c => c.nom).filter(Boolean)))];
 const optionsResp = sel => `<option value="">— À attribuer —</option>` + personnes().concat(sel && !personnes().includes(sel) ? [sel] : []).map(n => `<option${n===sel?' selected':''}>${esc(n)}</option>`).join('');
 const rangImm = c => { const k = D.immeubles.findIndex(i => i.code === c); return k < 0 ? 99 : k; };
-const etapesDe = id => D.etapes.filter(j => j.action === id).sort((a,b) => (b.date+b.id).localeCompare(a.date+a.id));
+const etapesDe = id => D.etapes.filter(j => j.action === id).sort((a,b) => ((b.date||'0000')+b.id).localeCompare((a.date||'0000')+a.id));
 const trier = as => as.sort((x,y) => (!!x.terminee - !!y.terminee) || URANG(x.urgence) - URANG(y.urgence) || rangImm(x.immeuble) - rangImm(y.immeuble) || (x.lot||'').localeCompare(y.lot||'', 'fr', {numeric:true}) || x.titre.localeCompare(y.titre));
 
 // ---------- navigation ----------
@@ -254,9 +259,11 @@ function ligneAction(a){
     <a class="li-lien" href="#action-${a.id}">
       <div class="li-top"><span class="u u-${UCL(a.urgence)}">${esc(a.urgence)}</span>${a.terminee ? '<span class="fin">Terminée</span>' : ''}</div>
       <div class="li-titre"><span class="logt">${esc(i ? i.nom : 'Sans logement')}${a.lot ? ` · ${esc(a.lot)}` : ''}</span><span class="act">${esc(a.titre)}</span></div>
-      ${a.prochaine ? `<div class="next"><b>Prochaine étape</b>${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span></div>` : (!a.terminee ? `<div class="next vide">Prochaine étape à définir</div>` : '')}
       ${a.personnes ? `<div class="pers">👥 ${esc(a.personnes)}</div>` : ''}
     </a>
+    ${a.prochaine ? `<div class="next li-next"><b>Prochaine étape</b>${esc(a.prochaine)}<span class="resp${a.responsable?'':' vide'}">👤 ${a.responsable ? esc(a.responsable) : 'Responsable à désigner'}</span>
+        <label class="done"><input type="checkbox" data-fait="${a.id}"> Étape terminée</label></div>`
+      : (!a.terminee ? `<a class="next vide li-next" href="#action-${a.id}">Prochaine étape à définir ›</a>` : '')}
     ${ep.length ? `<details class="passees"><summary>Étapes passées <span class="n">${ep.length}</span></summary>${ep.map(j => ligneEtape(j)).join('')}</details>` : ''}
   </div>`;
 }
@@ -290,6 +297,10 @@ function vueListe(){
     </div>
     ${as.length ? groupes.filter(([,l]) => l.length).map(([u,l]) => `<h3>${esc(u)} <span class="n">${l.length}</span></h3><div class="list">${l.map(ligneAction).join('')}</div>`).join('')
       : '<div class="card empty">Aucune action pour ces filtres.</div>'}`;
+  document.querySelectorAll('[data-fait]').forEach(c => c.onchange = async () => {
+    const a = D.actions.find(x => x.id === c.dataset.fait); c.disabled = true;
+    if(await terminerEtape(a)) location.hash = '#action-' + a.id; else { c.checked = false; c.disabled = false; }
+  });
   $('fl-imm').onchange = () => { F.imm = $('fl-imm').value; store.set('pf_imm', F.imm); vueListe(); };
   $('fl-urg').onchange = () => { F.urg = $('fl-urg').value; store.set('pf_urg', F.urg); vueListe(); };
   $('fl-resp').onchange = () => { F.resp = $('fl-resp').value; store.set('pf_resp', F.resp); vueListe(); };
@@ -312,21 +323,16 @@ function vueAction(id){
         <div style="flex:0 0 38%"><label for="a-lot">Logement n° / étage</label><input id="a-lot" value="${esc(a.lot)}" placeholder="ex. Logement 20, 1er étage"></div>
       </div>
       <div class="f"><label for="a-titre">Action</label><input id="a-titre" value="${esc(a.titre)}" required></div>
-      <div class="f f-next"><label for="a-prochaine">Prochaine étape</label><textarea id="a-prochaine" rows="2" placeholder="ex. Faire passer les intervenants">${esc(a.prochaine)}</textarea>
-        <div class="resp-f"><label for="a-resp">Responsable</label><select id="a-resp">${optionsResp(a.responsable)}</select></div>
-        ${a.prochaine ? `<button type="button" class="lien" id="a-faite">✔︎ Prochaine étape faite : la passer dans les étapes passées</button>` : ''}</div>
       <div class="f"><label for="a-pers">Personnes impliquées</label><input id="a-pers" value="${esc(a.personnes)}" placeholder="ex. Gerald Benitah, Simon"></div>
       <div class="f"><label for="a-notes">Commentaire</label><textarea id="a-notes" rows="3">${esc(a.notes)}</textarea></div>
+      <div class="f f-next"><label for="a-prochaine">Prochaine étape</label><textarea id="a-prochaine" rows="2" placeholder="ex. Faire passer les intervenants">${esc(a.prochaine)}</textarea>
+        <div class="resp-f"><label for="a-resp">Responsable de la prochaine étape</label><select id="a-resp">${optionsResp(a.responsable)}</select></div>
+        ${a.prochaine ? `<label class="done"><input type="checkbox" id="a-faite"> Étape terminée</label>` : ''}</div>
       <button class="btn full" id="a-save" disabled>Enregistrer les modifications</button>
       <div class="msg" id="a-msg"></div>
     </form>
 
     <details class="card passees-fiche" id="d-etapes"><summary>Étapes passées <span class="n" id="n-etapes">${ep.length}</span></summary>
-      <form id="f-etape" autocomplete="off" style="margin:10px 0 6px">
-        <div class="row"><div style="flex:0 0 11em"><label for="e-date">Date</label><input type="date" id="e-date" value="${auj()}"></div></div>
-        <div class="f"><label for="e-texte">Ce qui a été fait</label><textarea id="e-texte" rows="2" placeholder="ex. Appelé Gerald Benitah : il passe mardi" required></textarea></div>
-        <button class="btn full">Ajouter une étape passée</button>
-      </form>
       <div id="lst-etapes" style="margin-top:12px">${listeEtapes(ep)}</div>
     </details>
 
@@ -350,24 +356,28 @@ function vueAction(id){
     $('a-save').disabled = true; $('a-msg').className='msg'; $('a-msg').textContent='Enregistrement…';
     if(await sauver(champs)){ vueAction(id); toast('Enregistré'); } else { $('a-save').disabled = false; $('a-msg').textContent=''; }
   };
-  if($('a-faite')) $('a-faite').onclick = async () => {
-    const champs = lireChamps(); const faite = champs.prochaine; if(!faite) return;
-    const j = { id: nid('E'), action: id, date: auj(), texte: faite + (champs.responsable ? ` (${champs.responsable})` : '') };
-    D.etapes.push(j); champs.prochaine = ''; champs.responsable = '';
-    try{ await envoyer('ajouterEtape', j); }catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); toast('Erreur, réessayez'); return; }
-    if(await sauver(champs)){ vueAction(id); $('d-etapes').open = true; $('a-prochaine').focus(); toast('Étape passée ajoutée · saisissez la suivante'); }
+  if($('a-faite')) $('a-faite').onchange = async () => {
+    $('a-faite').disabled = true;
+    if(await terminerEtape(a, lireChamps())){ sale = false; vueAction(id); $('d-etapes').open = true; $('a-prochaine').focus(); }
+    else { $('a-faite').checked = false; $('a-faite').disabled = false; }
   };
   $('a-fin').onclick = async () => { if(await sauver({terminee: !a.terminee})){ toast(a.terminee ? 'Action terminée' : 'Action rouverte'); location.hash = '#actions'; } };
 
-  $('f-etape').onsubmit = async ev => {
-    ev.preventDefault();
-    const j = { id: nid('E'), action: id, date: $('e-date').value || auj(), texte: $('e-texte').value.trim() };
-    if(!j.texte) return;
-    D.etapes.push(j); $('e-texte').value = ''; majEtapes(id);
-    try{ await envoyer('ajouterEtape', j); toast('Étape ajoutée'); }
-    catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); majEtapes(id); toast('Erreur : étape non enregistrée'); }
-  };
   brancherSuppressions(() => majEtapes(id));
+}
+// « Étape terminée » : la prochaine étape part dans les étapes passées, datée du jour
+async function terminerEtape(a, champs){
+  champs = champs || {};
+  const texte = (champs.prochaine ?? a.prochaine).trim(), resp = champs.responsable ?? a.responsable;
+  if(!texte) return false;
+  const j = { id: nid('E'), action: a.id, date: auj(), texte: texte + (resp ? ` (${resp})` : '') };
+  const maj = { ...champs, prochaine: '', responsable: '' };
+  const avant = {...a};
+  D.etapes.push(j); Object.assign(a, maj, {maj: auj()});
+  try{ await envoyer('ajouterEtape', j); await envoyer('majAction', {id: a.id, champs: maj}); }
+  catch(e){ D.etapes = D.etapes.filter(x => x.id !== j.id); Object.assign(a, avant); toast('Erreur, réessayez'); return false; }
+  toast(`Étape passée le ${fd(j.date)} · indiquez la prochaine étape`);
+  return true;
 }
 function listeEtapes(ep){ return ep.length ? ep.map(j => ligneEtape(j, true)).join('') : '<div class="empty">Aucune étape passée pour l’instant.</div>'; }
 function majEtapes(id){ const ep = etapesDe(id); $('lst-etapes').innerHTML = listeEtapes(ep); $('n-etapes').textContent = ep.length; brancherSuppressions(() => majEtapes(id)); }
@@ -432,10 +442,10 @@ function vueNouvelle(c){
         <div style="flex:0 0 38%"><label for="n-lot">Logement n° / étage</label><input id="n-lot" placeholder="ex. Logement 20"></div>
       </div>
       <div class="f"><label for="n-titre">Action</label><input id="n-titre" placeholder="ex. Interphone" required></div>
-      <div class="f f-next"><label for="n-prochaine">Prochaine étape</label><textarea id="n-prochaine" rows="2" placeholder="ex. Demander 3 devis"></textarea>
-        <div class="resp-f"><label for="n-resp">Responsable</label><select id="n-resp">${optionsResp('')}</select></div></div>
       <div class="f"><label for="n-pers">Personnes impliquées</label><input id="n-pers" placeholder="ex. Gerald Benitah, Simon"></div>
       <div class="f"><label for="n-notes">Commentaire</label><textarea id="n-notes"></textarea></div>
+      <div class="f f-next"><label for="n-prochaine">Prochaine étape</label><textarea id="n-prochaine" rows="2" placeholder="ex. Demander 3 devis"></textarea>
+        <div class="resp-f"><label for="n-resp">Responsable de la prochaine étape</label><select id="n-resp">${optionsResp('')}</select></div></div>
       <button class="btn full" id="n-ok">Créer l’action</button>
       <div class="msg" id="n-msg"></div>
     </form>`;

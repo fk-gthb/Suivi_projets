@@ -74,6 +74,11 @@
   .li-lien:hover{background:var(--sunk)}
   .li-top{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
   .fin{font-size:.78rem;font-weight:700;color:var(--ok)}
+  .trombone{font-size:.82rem;font-weight:600;color:var(--muted)}
+  .doc{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+  .doc:first-child{border-top:0}
+  .doc a{text-decoration:none;font-weight:600;overflow-wrap:anywhere;min-width:0}
+  .ajout-doc{margin-top:10px;display:block;cursor:pointer}
   .li-titre{margin-top:6px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;line-height:1.25}
   .logt{font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
   .act{font-size:.98rem;font-weight:700;color:var(--sujet-ink);background:var(--sujet);border-radius:6px;padding:2px 9px}
@@ -266,7 +271,7 @@ function ligneAction(a){
   const i = imm(a.immeuble);
   return `<div class="li ur-${UCL(a.urgence)}${a.terminee?' fini':''}">
     <a class="li-lien" href="#action-${a.id}">
-      <div class="li-top"><span class="u u-${UCL(a.urgence)}">${esc(a.urgence)}</span>${a.terminee ? '<span class="fin">Terminée</span>' : ''}</div>
+      <div class="li-top"><span class="u u-${UCL(a.urgence)}">${esc(a.urgence)}</span>${a.terminee ? '<span class="fin">Terminée</span>' : ''}${(n => n ? `<span class="trombone" title="${n} document${n>1?'s':''}">📎 ${n}</span>` : '')(docsDe(a.id).length)}</div>
       <div class="li-titre"><span class="logt">${esc(i ? i.nom : 'Sans logement')}${a.lot ? ` · ${esc(a.lot)}` : ''}</span><span class="act">${esc(a.titre)}</span></div>
       ${a.personnes ? `<div class="pers">👥 ${esc(a.personnes)}</div>` : ''}
     </a>
@@ -336,6 +341,14 @@ function vueAction(id){
       <div class="msg" id="a-msg"></div>
     </form>
 
+    <h3>Documents <span class="n" id="n-docs">${docsDe(id).length}</span></h3>
+    <div class="card">
+      <div id="lst-docs">${listeDocs(id)}</div>
+      <label class="btn sec2 full ajout-doc" for="doc-input">+ Ajouter un document</label>
+      <input type="file" id="doc-input" multiple hidden accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.txt,.csv,.heic">
+      <div class="msg" id="doc-msg"></div>
+    </div>
+
     <details class="card passees-fiche" id="d-etapes"><summary>Étapes passées <span class="n" id="n-etapes">${ep.length}</span></summary>
       <div id="lst-etapes" style="margin-top:12px">${listeEtapes(ep)}</div>
     </details>
@@ -368,6 +381,8 @@ function vueAction(id){
   $('a-fin').onclick = async () => { if(await sauver({terminee: !a.terminee})){ toast(a.terminee ? 'Action terminée' : 'Action rouverte'); location.hash = '#actions'; } };
 
   brancherSuppressions(() => majEtapes(id));
+  $('doc-input').onchange = () => { const fs = [...$('doc-input').files]; $('doc-input').value = ''; envoyerDocs(id, fs); };
+  brancherDocs(id);
 }
 // « Étape terminée » : la prochaine étape part dans les étapes passées, datée du jour
 async function terminerEtape(a, champs){
@@ -383,6 +398,40 @@ async function terminerEtape(a, champs){
   toast(`Étape passée le ${fd(j.date)} · indiquez la prochaine étape`);
   return true;
 }
+// ---------- documents ----------
+const docsDe = id => (D.documents || []).filter(x => x.action === id);
+const icoDoc = n => /\.(jpe?g|png|heic|gif|webp)$/i.test(n) ? '🖼️' : /\.pdf$/i.test(n) ? '📄' : '📎';
+function listeDocs(id){
+  const ds = docsDe(id);
+  return ds.length ? ds.map(x => `<div class="doc"><a href="${esc(x.url)}" target="_blank" rel="noopener">${icoDoc(x.nom)} ${esc(x.nom)}</a>
+    <button type="button" class="del" data-deldoc="${esc(x.id)}">Supprimer</button></div>`).join('') : '<div class="empty">Aucun document pour l’instant.</div>';
+}
+function majDocs(id){ if(!$('lst-docs')) return; $('lst-docs').innerHTML = listeDocs(id); $('n-docs').textContent = docsDe(id).length; brancherDocs(id); }
+function brancherDocs(id){
+  document.querySelectorAll('[data-deldoc]').forEach(b => b.onclick = async () => {
+    if(!b.classList.contains('sure')){ b.classList.add('sure'); b.textContent = 'Confirmer ?'; setTimeout(() => { b.classList.remove('sure'); b.textContent = 'Supprimer'; }, 3000); return; }
+    const garde = D.documents; D.documents = garde.filter(x => x.id !== b.dataset.deldoc); majDocs(id);
+    try{ await envoyer('supprimerDocument', {id: b.dataset.deldoc}); toast('Document supprimé'); }
+    catch(e){ D.documents = garde; majDocs(id); toast('Erreur : ' + e.message); }
+  });
+}
+const lireBase64 = f => new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = () => ko(new Error('lecture du fichier impossible')); r.readAsDataURL(f); });
+async function envoyerDocs(id, fichiers){
+  const msg = $('doc-msg');
+  for(const [k, f] of fichiers.entries()){
+    if(f.size > 20 * 1024 * 1024){ msg.className = 'msg err'; msg.textContent = `« ${f.name} » dépasse 20 Mo.`; continue; }
+    msg.className = 'msg'; msg.textContent = `Envoi de « ${f.name} »${fichiers.length > 1 ? ` (${k+1}/${fichiers.length})` : ''}…`;
+    try{
+      const data = await lireBase64(f);
+      const d = { id: nid('F'), action: id, nom: f.name, type: f.type || 'application/octet-stream' };
+      const r = await envoyer('ajouterDocument', { ...d, data });
+      D.documents = (D.documents || []).concat([{ id: d.id, action: id, nom: d.nom, url: r.url || '#', date: auj() }]);
+      majDocs(id);
+    }catch(e){ msg.className = 'msg err'; msg.textContent = `Échec pour « ${f.name} » : ${e.message}`; return; }
+  }
+  if(!msg.classList.contains('err')){ msg.textContent = ''; toast(fichiers.length > 1 ? 'Documents ajoutés' : 'Document ajouté'); }
+}
+
 function listeEtapes(ep){ return ep.length ? ep.map(j => ligneEtape(j, true)).join('') : '<div class="empty">Aucune étape passée pour l’instant.</div>'; }
 function majEtapes(id){ const ep = etapesDe(id); $('lst-etapes').innerHTML = listeEtapes(ep); $('n-etapes').textContent = ep.length; brancherSuppressions(() => majEtapes(id)); }
 function brancherSuppressions(apres){

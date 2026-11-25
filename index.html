@@ -52,6 +52,8 @@
   .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
   .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
   .filters{align-items:center}
+  .seg.zone{margin-bottom:10px}
+  .seg.zone button{padding:8px 14px;font-size:.92rem}
   .filters select{width:auto;flex:1 1 150px;padding-block:8px;font-size:.92rem}
   .seg{display:inline-flex;flex-wrap:wrap;gap:4px}
   .seg button{padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
@@ -245,7 +247,7 @@ const trier = as => as.sort((x,y) => (!!x.terminee - !!y.terminee) || URANG(x.ur
 
 // ---------- navigation ----------
 let sale = false, ignorer = false;
-let F = { imm: store.get('pf_imm') || '', urg: store.get('pf_urg') || '', resp: store.get('pf_resp') || '', fini: store.get('pf_fini') === '1' };
+let F = { zone: store.get('pf_zone') || 'moselle', imm: store.get('pf_imm') || '', urg: store.get('pf_urg') || '', resp: store.get('pf_resp') || '', fini: store.get('pf_fini') === '1' };
 window.addEventListener('hashchange', () => {
   if(ignorer){ ignorer = false; return; }
   if(sale && !confirm('Des modifications ne sont pas enregistrées. Quitter quand même ?')){ ignorer = true; history.back(); return; }
@@ -288,8 +290,13 @@ function ligneEtape(j, suppr){
 }
 
 // ---------- liste des actions ----------
+// Moselle = code postal 57 ; les autres logements n'apparaissent qu'avec « Tous les logements »
+const estMoselle = c => { const i = imm(c); return !i || /^57/.test(String(i.ville).trim()); };
+const dansZone = a => F.zone === 'tous' || estMoselle(a.immeuble);
 function vueListe(){
-  let as = D.actions.slice();
+  const imms = D.immeubles.filter(i => F.zone === 'tous' || estMoselle(i.code));
+  if(F.imm && !imms.some(i => i.code === F.imm)) { F.imm = ''; store.set('pf_imm', ''); }
+  let as = D.actions.filter(dansZone);
   if(!F.fini) as = as.filter(a => !a.terminee);
   if(F.imm) as = as.filter(a => a.immeuble === F.imm);
   if(F.urg) as = as.filter(a => a.urgence === F.urg);
@@ -297,20 +304,25 @@ function vueListe(){
   trier(as);
   const resps = [...new Set(EQUIPE.concat(D.actions.map(a => a.responsable).filter(Boolean).sort((x,y) => x.localeCompare(y,'fr'))))];
   if(F.resp && F.resp !== '-' && !resps.includes(F.resp)) resps.push(F.resp);
-  const ouv = D.actions.filter(a => !a.terminee);
+  const ouv = D.actions.filter(a => !a.terminee && dansZone(a));
   const nu = ouv.filter(a => a.urgence === 'Urgent').length;
   const groupes = URGENCES.map(u => [u, as.filter(a => a.urgence === u && !a.terminee)]).concat([['Terminées', as.filter(a => a.terminee)]]);
   $('vue').innerHTML = `
     <div class="bar"><div><strong>${ouv.length}</strong> action${ouv.length>1?'s':''} en cours${nu ? ` · <span class="late">${nu} urgente${nu>1?'s':''}</span>` : ''}</div>
       <a class="btn" href="#nouvelle${F.imm ? '-'+F.imm : ''}">+ Nouvelle action</a></div>
+    <div class="seg zone" role="group" aria-label="Périmètre">
+      <button type="button" data-zone="moselle" aria-pressed="${F.zone!=='tous'}">Logements Moselle</button>
+      <button type="button" data-zone="tous" aria-pressed="${F.zone==='tous'}">Tous les logements</button>
+    </div>
     <div class="filters">
-      <select id="fl-imm" aria-label="Logement"><option value="">Tous logements</option>${D.immeubles.map(i => `<option value="${esc(i.code)}"${F.imm===i.code?' selected':''}>${esc(i.nom)}</option>`).join('')}</select>
+      <select id="fl-imm" aria-label="Logement"><option value="">Tous logements</option>${imms.map(i => `<option value="${esc(i.code)}"${F.imm===i.code?' selected':''}>${esc(i.nom)}</option>`).join('')}</select>
       <select id="fl-urg" aria-label="Urgence"><option value="">Toutes urgences</option>${URGENCES.map(u => `<option${F.urg===u?' selected':''}>${esc(u)}</option>`).join('')}</select>
       <select id="fl-resp" aria-label="Responsable"><option value="">Tous responsables</option>${resps.map(r => `<option value="${esc(r)}"${F.resp===r?' selected':''}>👤 ${esc(r)}</option>`).join('')}<option value="-"${F.resp==='-'?' selected':''}>Sans responsable</option></select>
       <label class="chk"><input type="checkbox" id="fl-fini"${F.fini?' checked':''}> Afficher les terminées</label>
     </div>
     ${as.length ? groupes.filter(([,l]) => l.length).map(([u,l]) => `<h3>${esc(u)} <span class="n">${l.length}</span></h3><div class="list">${l.map(ligneAction).join('')}</div>`).join('')
       : '<div class="card empty">Aucune action pour ces filtres.</div>'}`;
+  document.querySelectorAll('[data-zone]').forEach(b => b.onclick = () => { F.zone = b.dataset.zone; store.set('pf_zone', F.zone); vueListe(); });
   $('fl-imm').onchange = () => { F.imm = $('fl-imm').value; store.set('pf_imm', F.imm); vueListe(); };
   $('fl-urg').onchange = () => { F.urg = $('fl-urg').value; store.set('pf_urg', F.urg); vueListe(); };
   $('fl-resp').onchange = () => { F.resp = $('fl-resp').value; store.set('pf_resp', F.resp); vueListe(); };
@@ -446,7 +458,9 @@ function brancherSuppressions(apres){
   });
 }
 function optionsImm(sel){
-  return `<option value="">— Sans logement —</option>` + D.immeubles.map(i => `<option value="${esc(i.code)}"${i.code===sel?' selected':''}>${esc(i.nom)}</option>`).join('');
+  const opt = i => `<option value="${esc(i.code)}"${i.code===sel?' selected':''}>${esc(i.nom)}</option>`;
+  const mos = D.immeubles.filter(i => estMoselle(i.code)), autres = D.immeubles.filter(i => !estMoselle(i.code));
+  return `<option value="">— Sans logement —</option><optgroup label="Moselle">${mos.map(opt).join('')}</optgroup>` + (autres.length ? `<optgroup label="Autres logements">${autres.map(opt).join('')}</optgroup>` : '');
 }
 
 // ---------- contacts ----------
